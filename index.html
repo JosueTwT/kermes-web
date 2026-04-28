@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juegos Kermés</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    #juegos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      padding: 20px;
+    }
+
+    .juego {
+      border-radius: 10px;
+      padding: 15px;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .libre {
+      background: #2ecc71;
+    }
+
+    .ocupado {
+      background: #e74c3c;
+    }
+
+    select, button {
+      margin-top: 5px;
+      padding: 6px;
+      width: 100%;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      cursor: pointer;
+      background: #333;
+      color: white;
+    }
+
+    button:hover {
+      background: black;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎮 Estado de Juegos</h1>
+
+<div id="juegos"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// 🔑 TU CONFIG (ya correcta)
+const firebaseConfig = {
+  apiKey: "AIzaSyCwHd8APv-4trlrEyLaHXcrOz1GZUQT7lk",
+  authDomain: "kermes-9c08c.firebaseapp.com",
+  databaseURL: "https://kermes-9c08c-default-rtdb.firebaseio.com",
+  projectId: "kermes-9c08c",
+  storageBucket: "kermes-9c08c.firebasestorage.app",
+  messagingSenderId: "776294988752",
+  appId: "1:776294988752:web:4b358ea23bcee830e817d5"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const juegosRef = ref(db, "juegos");
+
+// 🔄 ESCUCHAR CAMBIOS EN TIEMPO REAL
+onValue(juegosRef, (snapshot) => {
+  const data = snapshot.val();
+  const contenedor = document.getElementById("juegos");
+  contenedor.innerHTML = "";
+
+  if (!data) {
+    contenedor.innerHTML = "<p>No hay datos en Firebase todavía</p>";
+    return;
+  }
+
+  for (let id in data) {
+    const juego = data[id];
+
+    const div = document.createElement("div");
+    div.className = "juego " + juego.estado;
+
+    div.innerHTML = `
+      <h3>${id}</h3>
+
+      <label>Estado:</label>
+      <select id="estado-${id}">
+        <option value="libre" ${juego.estado === "libre" ? "selected" : ""}>Libre</option>
+        <option value="ocupado" ${juego.estado === "ocupado" ? "selected" : ""}>Ocupado</option>
+      </select>
+
+      <label>Partidas:</label>
+      <select id="partidas-${id}">
+        <option value="0" ${juego.partidas == 0 ? "selected" : ""}>0</option>
+        <option value="1" ${juego.partidas == 1 ? "selected" : ""}>1</option>
+        <option value="2" ${juego.partidas == 2 ? "selected" : ""}>2</option>
+        <option value="3" ${juego.partidas == 3 ? "selected" : ""}>3</option>
+      </select>
+
+      <button onclick="guardar('${id}')">Guardar</button>
+    `;
+
+    contenedor.appendChild(div);
+  }
+});
+
+// 💾 GUARDAR CAMBIOS
+window.guardar = function(id) {
+  const estado = document.getElementById(`estado-${id}`).value;
+  let partidas = parseInt(document.getElementById(`partidas-${id}`).value);
+
+  // lógica automática
+  if (estado === "libre") {
+    partidas = 0;
+  }
+
+  if (estado === "ocupado" && partidas === 0) {
+    partidas = 1;
+  }
+
+  const juegoRef = ref(db, "juegos/" + id);
+
+  set(juegoRef, {
+    estado: estado,
+    partidas: partidas
+  });
+};
+</script>
+
+</body>
+</html>
